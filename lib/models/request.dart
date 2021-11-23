@@ -1,5 +1,5 @@
 class GetTitleDataRequest {
-  List<String> keys;
+  List<String>? keys;
 
   GetTitleDataRequest({this.keys});
 
@@ -15,7 +15,7 @@ class GetTitleDataRequest {
 }
 
 class GetPlayerDataRequest {
-  List<String> keys;
+  List<String>? keys;
 
   GetPlayerDataRequest({this.keys});
 
@@ -31,9 +31,9 @@ class GetPlayerDataRequest {
 }
 
 class PushNotificationRegistrationRequest {
-  String deviceToken;
-  bool sendPushNotificationConfirmation;
-  String confirmationMessage;
+  String? deviceToken;
+  bool? sendPushNotificationConfirmation;
+  String? confirmationMessage;
 
   PushNotificationRegistrationRequest(
       {this.deviceToken,
@@ -57,10 +57,10 @@ class PushNotificationRegistrationRequest {
 }
 
 class ValidateGooglePlayPurchaseRequest {
-  String receiptJson;
-  String signature;
-  String currencyCode;
-  int purchasePrice;
+  String? receiptJson;
+  String? signature;
+  String? currencyCode;
+  int? purchasePrice;
 
   ValidateGooglePlayPurchaseRequest(
       {this.receiptJson,

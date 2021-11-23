@@ -4,9 +4,9 @@ import 'dart:convert';
 
 
 class PlayFabResultCommon {
-  int code;
-  String status;
-  String data;
+  int? code;
+  String? status;
+  String? data;
 
   PlayFabResultCommon({this.code, this.status, this.data});
 
@@ -30,7 +30,7 @@ class PlayFabResultCommon {
 }
 
 class TitleData {
-  Map<String, dynamic> data;
+  Map<String, dynamic>? data;
 
   TitleData({this.data});
 
@@ -48,7 +48,7 @@ class TitleData {
 }
 
 class PlayerData {
-  Map<String, dynamic> data;
+  Map<String, dynamic>? data;
 
   PlayerData({this.data});
 
@@ -66,9 +66,9 @@ class PlayerData {
 }
 
 class LoginResult {
-  String sessionTicket;
-  String playFabId;
-  bool newlyCreated;
+  String? sessionTicket;
+  String? playFabId;
+  bool? newlyCreated;
 
   LoginResult({this.sessionTicket, this.playFabId, this.newlyCreated});
 

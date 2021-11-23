@@ -73,7 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
       PlayFabClientAPI.getPlayerData(onSuccess: (PlayerData playerData) {
 
         print(playerData.data.values.toString());
-        entryList = playerData.data.values.toList();
+        // entryList = playerData.data.values.toList();
 
       });
       PlayFabClientAPI.validateGooglePlayPurchase(
@@ -142,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Text(
               '$_counter',
-              style: Theme.of(context).textTheme.display1,
+              style: Theme.of(context).textTheme.headline6,
             ),
           ],
         ),

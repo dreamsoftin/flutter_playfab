@@ -1,14 +1,13 @@
 library flutter_playfab;
 
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:device_info/device_info.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_playfab/models/request.dart';
 import 'package:flutter_playfab/models/response.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:device_info/device_info.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,20 +24,20 @@ class EventData {
 
 ///Playfab class
 class PlayFabClientAPI {
-  static String _sessionTicket;
-  static String _playFabId;
+  static String? _sessionTicket;
+  static String? _playFabId;
   static bool _createAccount = true;
   static bool _isLoggedIn = false;
   static bool _isSyncing = false;
   static bool _debugMode = false;
-  static String _titleId;
-  static List<EventData> _eventQueue;
+  static String? _titleId;
+  static List<EventData>? _eventQueue;
 
   /// Initialize PlayFab
   ///
   /// [titleId] : TitleID of your PlayFab app
   static initialize(String titleId) {
-    _eventQueue = new List<EventData>();
+    _eventQueue =  [];
     _titleId = titleId;
   }
 
@@ -47,14 +46,14 @@ class PlayFabClientAPI {
 
   /// if account is created
   static bool get isLoggedIn => _isLoggedIn;
-  static String get sessionTicket => _sessionTicket;
-  static set sessionTicket(String value) {
+  static String? get sessionTicket => _sessionTicket;
+  static set sessionTicket(String? value) {
     _sessionTicket = value;
   }
 
-  static String get playFabId => _playFabId;
+  static String? get playFabId => _playFabId;
 
-  static Future login({Function onSuccess, Function onError}) async {
+  static Future login({Function? onSuccess, Function? onError}) async {
     if (!_isLoggedIn) {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       _createAccount =
@@ -66,7 +65,7 @@ class PlayFabClientAPI {
       if (UniversalPlatform.isIOS) {
         var deviceData = await deviceInfoPlugin.iosInfo;
         response = await http.post(
-          'https://$_titleId.playfabapi.com/Client/LoginWithIOSDeviceID',
+          Uri.parse('https://$_titleId.playfabapi.com/Client/LoginWithIOSDeviceID'),
           headers: {
             "Accept": "text/plain, */*; q=0.01",
             "Content-Type": "application/json",
@@ -79,7 +78,7 @@ class PlayFabClientAPI {
         var deviceData = await deviceInfoPlugin.androidInfo;
         response = await http
             .post(
-          'https://$_titleId.playfabapi.com/Client/LoginWithAndroidDeviceID',
+        Uri.parse('https://$_titleId.playfabapi.com/Client/LoginWithAndroidDeviceID'),
           headers: {
             "Accept": "text/plain, */*; q=0.01",
             "Content-Type": "application/json",
@@ -92,7 +91,7 @@ class PlayFabClientAPI {
           throw Exception("Unknown Error");
         });
       } else if (UniversalPlatform.isWeb) {
-        String uuid = prefs.getString("uuid");
+        String? uuid = prefs.getString("uuid");
         if (uuid == null) {
           uuid = Uuid().v4();
           prefs.setString("uuid", uuid);
@@ -100,13 +99,13 @@ class PlayFabClientAPI {
 
         response = await http
             .post(
-          'https://$_titleId.playfabapi.com/Client/LoginWithCustomID',
+          Uri.parse('https://$_titleId.playfabapi.com/Client/LoginWithCustomID'),
           headers: {
             "Accept": "text/plain, */*; q=0.01",
             "Content-Type": "application/json",
           },
           body:
-              '{"CustomId": "${uuid}","CreateAccount": $_createAccount,"TitleId": "$_titleId"}',
+              '{"CustomId": "$uuid","CreateAccount": $_createAccount,"TitleId": "$_titleId"}',
           encoding: Encoding.getByName("utf-8"),
         )
             .catchError((Object error) {
@@ -121,8 +120,8 @@ class PlayFabClientAPI {
         var parsedData =
             PlayFabResultCommon.fromJson(json.decode(response.body));
         if (parsedData.code == 200) {
-          var data = LoginResult.fromJson(json.decode(parsedData.data));
-          if (data.newlyCreated) {
+          var data = LoginResult.fromJson(json.decode(parsedData.data!));
+          if (data.newlyCreated!) {
             if (_debugMode) debugPrint('logIn Response: Account Newly Created');
             prefs.setBool('playfab_account_created', true);
           } else {
@@ -133,7 +132,7 @@ class PlayFabClientAPI {
           _playFabId = data.playFabId;
           _isLoggedIn = true;
 
-          prefs.setString("playfab_session_ticket", _sessionTicket);
+          prefs.setString("playfab_session_ticket", _sessionTicket!);
 
           /// Send events in queue
           _sendQueuedEvents();
@@ -152,18 +151,18 @@ class PlayFabClientAPI {
     }
   }
 
-  static Future getTitleData({Function onSuccess, Function onError}) async {
+  static Future getTitleData({Function? onSuccess, Function? onError}) async {
     if (_isLoggedIn) {
       http.Response response;
       var requestData = GetTitleDataRequest();
-      requestData.keys = new List<String>();
+      requestData.keys = <String>[];
       //requestData.keys.add("Key2");
       response = await http.post(
-        'https://$_titleId.playfabapi.com/Client/GetTitleData',
+       Uri.parse( 'https://$_titleId.playfabapi.com/Client/GetTitleData'),
         headers: {
           "Accept": "text/plain, */*; q=0.01",
           "Content-Type": "application/json",
-          "X-Authentication": _sessionTicket
+          "X-Authentication": _sessionTicket!
         },
         body: json.encode(requestData.toJson()),
         encoding: Encoding.getByName("utf-8"),
@@ -174,7 +173,7 @@ class PlayFabClientAPI {
             PlayFabResultCommon.fromJson(json.decode(response.body));
         if (parsedData.code == 200) {
           TitleData titleData =
-              TitleData.fromJson(json.decode(parsedData.data));
+              TitleData.fromJson(json.decode(parsedData.data!));
 
           if (onSuccess != null) onSuccess(titleData);
         } else {
@@ -192,17 +191,17 @@ class PlayFabClientAPI {
     }
   }
 
-  static Future getPlayerData({Function onSuccess, Function onError}) async {
+  static Future getPlayerData({Function? onSuccess, Function? onError}) async {
     if (_isLoggedIn) {
       http.Response response;
       var requestData = GetPlayerDataRequest();
-      requestData.keys = new List<String>();
+      requestData.keys = <String>[];
       response = await http.post(
-        'https://$_titleId.playfabapi.com/Client/GetUserData',
+        Uri.parse('https://$_titleId.playfabapi.com/Client/GetUserData'),
         headers: {
           "Accept": "text/plain, */*; q=0.01",
           "Content-Type": "application/json",
-          "X-Authentication": _sessionTicket
+          "X-Authentication": _sessionTicket!
         },
         body: json.encode(requestData.toJson()),
         encoding: Encoding.getByName("utf-8"),
@@ -213,7 +212,7 @@ class PlayFabClientAPI {
         PlayFabResultCommon.fromJson(json.decode(response.body));
         if (parsedData.code == 200) {
           PlayerData playerData =
-          PlayerData.fromJson(json.decode(parsedData.data));
+          PlayerData.fromJson(json.decode(parsedData.data!));
 
           if (onSuccess != null) onSuccess(playerData);
         } else {
@@ -231,12 +230,12 @@ class PlayFabClientAPI {
     }
   }
 
-  static Future executeCloudScript() {}
+  static Future executeCloudScript() async {}
 
   static Future pushNotificationRegistration({
-    @required PushNotificationRegistrationRequest request,
-    Function onSuccess,
-    Function onError,
+    required PushNotificationRegistrationRequest request,
+    Function? onSuccess,
+    Function? onError,
   }) async {
     if (UniversalPlatform.isAndroid) {
       await androidDevicePushNotificationRegistration(
@@ -249,21 +248,21 @@ class PlayFabClientAPI {
   }
 
   static Future androidDevicePushNotificationRegistration({
-    @required PushNotificationRegistrationRequest request,
-    Function onSuccess,
-    Function onError,
+    required PushNotificationRegistrationRequest request,
+    Function? onSuccess,
+    Function? onError,
   }) async {
     if (_isLoggedIn) {
       http.Response response;
       var requestData = GetTitleDataRequest();
-      requestData.keys = new List<String>();
+      requestData.keys = <String>[];
       //requestData.keys.add("Key2");
       response = await http.post(
-        'https://$_titleId.playfabapi.com/Client/AndroidDevicePushNotificationRegistration',
+        Uri.parse('https://$_titleId.playfabapi.com/Client/AndroidDevicePushNotificationRegistration'),
         headers: {
           "Accept": "text/plain, */*; q=0.01",
           "Content-Type": "application/json",
-          "X-Authentication": _sessionTicket
+          "X-Authentication": _sessionTicket!
         },
         body: json.encode(request.toJson()),
         encoding: Encoding.getByName("utf-8"),
@@ -277,7 +276,7 @@ class PlayFabClientAPI {
         if (_debugMode)
           debugPrint(
               'androidDevicePushNotificationRegistration Response Failed: ' +
-                  response.reasonPhrase);
+                  response.reasonPhrase!);
       }
       return null;
     } else {
@@ -290,21 +289,21 @@ class PlayFabClientAPI {
   }
 
   static Future registerForIOSPushNotification({
-    @required PushNotificationRegistrationRequest request,
-    Function onSuccess,
-    Function onError,
+    required PushNotificationRegistrationRequest request,
+    Function? onSuccess,
+    Function? onError,
   }) async {
     if (_isLoggedIn) {
       http.Response response;
       var requestData = GetTitleDataRequest();
-      requestData.keys = new List<String>();
+      requestData.keys = <String>[];
       //requestData.keys.add("Key2");
       response = await http.post(
-        'https://$_titleId.playfabapi.com/Client/RegisterForIOSPushNotification',
+       Uri.parse( 'https://$_titleId.playfabapi.com/Client/RegisterForIOSPushNotification'),
         headers: {
           "Accept": "text/plain, */*; q=0.01",
           "Content-Type": "application/json",
-          "X-Authentication": _sessionTicket
+          "X-Authentication": _sessionTicket!
         },
         body: json.encode(request.toJson()),
         encoding: Encoding.getByName("utf-8"),
@@ -316,7 +315,7 @@ class PlayFabClientAPI {
       } else {
         if (_debugMode)
           debugPrint('registerForIOSPushNotification Response Failed: ' +
-              response.reasonPhrase);
+              response.reasonPhrase!);
       }
       return null;
     } else {
@@ -328,19 +327,19 @@ class PlayFabClientAPI {
   }
 
   static Future<void> validateGooglePlayPurchase({
-    @required ValidateGooglePlayPurchaseRequest request,
-    Function onSuccess,
-    Function onError,
+    required ValidateGooglePlayPurchaseRequest request,
+    Function? onSuccess,
+    Function? onError,
   }) async {
     if (_isLoggedIn) {
       http.Response response;
       //requestData.keys.add("Key2");
       response = await http.post(
-        'https://$_titleId.playfabapi.com/Client/ValidateGooglePlayPurchase',
+       Uri.parse( 'https://$_titleId.playfabapi.com/Client/ValidateGooglePlayPurchase'),
         headers: {
           "Accept": "text/plain, */*; q=0.01",
           "Content-Type": "application/json",
-          "X-Authentication": _sessionTicket
+          "X-Authentication": _sessionTicket!
         },
         body: json.encode(request.toJson()),
         encoding: Encoding.getByName("utf-8"),
@@ -352,7 +351,7 @@ class PlayFabClientAPI {
       } else {
         if (_debugMode)
           debugPrint('validateGooglePlayPurchase Response Failed: ' +
-              response.reasonPhrase);
+              response.reasonPhrase!);
       }
       return null;
     } else {
@@ -365,41 +364,41 @@ class PlayFabClientAPI {
 
   static Future _sendQueuedEvents() async {
     if (_isLoggedIn) {
-      if (_eventQueue.length > 0) {
+      if (_eventQueue!.length > 0) {
         //reverse eventQueue
         //_eventQueue = _eventQueue.reversed.toList();
-        _eventQueue.forEach((event) async {
+        _eventQueue!.forEach((event) async {
           print(event.name);
           await _event(event.name, event.data);
         });
-        _eventQueue.clear();
+        _eventQueue!.clear();
       }
     }
   }
 
   static writePlayerEvent(String eventName,
-      [Map<String, dynamic> params]) async {
+      [Map<String, dynamic>? params]) async {
     if (_isLoggedIn && !_isSyncing) {
       _event(eventName, params);
     } else {
-      if (_eventQueue == null) _eventQueue = List<EventData>();
-      _eventQueue.add(EventData(eventName, params));
+      if (_eventQueue == null) _eventQueue = [];
+      _eventQueue!.add(EventData(eventName, params));
       _sendQueuedEvents();
     }
   }
 
-  static _event(String eventName, Map<String, dynamic> params) async {
+  static _event(String eventName, Map<String, dynamic>? params) async {
     var requestData = jsonEncode(params);
     if (_isLoggedIn) {
       _isSyncing = true;
       //if(_debugMode) debugPrint('playfab event: Data: ' + requestData);
       try {
         final response = await http.post(
-          'https://$_titleId.playfabapi.com/Client/WritePlayerEvent',
+          Uri.parse('https://$_titleId.playfabapi.com/Client/WritePlayerEvent'),
           headers: {
             "Accept": "text/plain, */*; q=0.01",
             "Content-Type": "application/json",
-            "X-Authentication": _sessionTicket,
+            "X-Authentication": _sessionTicket!,
           },
           body: '{"EventName": "$eventName","Body": $requestData}',
           encoding: Encoding.getByName("utf-8"),
@@ -420,22 +419,22 @@ class PlayFabClientAPI {
 }
 
 class PlayFabLoginResponse {
-  int _code;
-  String _status;
-  PlayFabData _data;
+  int? _code;
+  String? _status;
+  PlayFabData? _data;
 
-  PlayFabLoginResponse({int code, String status, PlayFabData data}) {
+  PlayFabLoginResponse({int? code, String? status, PlayFabData? data}) {
     this._code = code;
     this._status = status;
     this._data = data;
   }
 
-  int get code => _code;
-  set code(int code) => _code = code;
-  String get status => _status;
-  set status(String status) => _status = status;
-  PlayFabData get data => _data;
-  set data(PlayFabData data) => _data = data;
+  int? get code => _code;
+  set code(int? code) => _code = code;
+  String? get status => _status;
+  set status(String? status) => _status = status;
+  PlayFabData? get data => _data;
+  set data(PlayFabData? data) => _data = data;
 
   PlayFabLoginResponse.fromJson(Map<String, dynamic> json) {
     _code = json['code'];
@@ -449,29 +448,29 @@ class PlayFabLoginResponse {
     data['code'] = this._code;
     data['status'] = this._status;
     if (this._data != null) {
-      data['data'] = this._data.toJson();
+      data['data'] = this._data!.toJson();
     }
     return data;
   }
 }
 
 class PlayFabData {
-  String _sessionTicket;
-  String _playFabId;
-  bool _newlyCreated;
+  String? _sessionTicket;
+  String? _playFabId;
+  bool? _newlyCreated;
 
-  PlayFabData({String sessionTicket, String playFabId, bool newlyCreated}) {
+  PlayFabData({String? sessionTicket, String? playFabId, bool? newlyCreated}) {
     this._sessionTicket = sessionTicket;
     this._playFabId = playFabId;
     this._newlyCreated = newlyCreated;
   }
 
-  String get sessionTicket => _sessionTicket;
-  set sessionTicket(String sessionTicket) => _sessionTicket = sessionTicket;
-  String get playFabId => _playFabId;
-  set playFabId(String playFabId) => _playFabId = playFabId;
-  bool get newlyCreated => _newlyCreated;
-  set newlyCreated(bool newlyCreated) => _newlyCreated = newlyCreated;
+  String? get sessionTicket => _sessionTicket;
+  set sessionTicket(String? sessionTicket) => _sessionTicket = sessionTicket;
+  String? get playFabId => _playFabId;
+  set playFabId(String? playFabId) => _playFabId = playFabId;
+  bool? get newlyCreated => _newlyCreated;
+  set newlyCreated(bool? newlyCreated) => _newlyCreated = newlyCreated;
 
   PlayFabData.fromJson(Map<String, dynamic> json) {
     _sessionTicket = json['SessionTicket'];
